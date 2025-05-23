@@ -49,3 +49,33 @@ def test_gallery_view_all_categories_and_images(client, category_with_images):
     assert category.name in str(response.content)
     for image in images:
         assert image.title in str(response.content)
+
+
+@pytest.mark.django_db
+def test_image_detail_invalid_id_format(client):
+    response = client.get('/image/abc/')
+    assert response.status_code == 404
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("image_id, expected_status", [
+    (1, 200),
+    (999, 404)
+])
+def test_image_detail(client, image_id, expected_status):
+    category = Category.objects.create(name="Animals")
+    image = Image.objects.create(
+        title="Lion",
+        image=SimpleUploadedFile("lion.jpg", b"content", content_type="image/jpeg"),
+        created_date=date.today(),
+        age_limit=10
+    )
+    image.categories.add(category)
+
+    url = reverse('image_detail', kwargs={'pk': image_id})
+    response = client.get(url)
+
+    assert response.status_code == expected_status
+
+    if expected_status == 200:
+        assert image.title in str(response.content)
