@@ -28,3 +28,24 @@ def category_with_images(db):
     image2.categories.add(category)
 
     return category, [image1, image2]
+
+
+@pytest.mark.django_db
+def test_gallery_view_no_categories(client):
+    url = reverse('main')
+    response = client.get(url)
+    assert response.status_code == 200
+    assert b'No categories' in response.content or len(response.context['categories']) == 0
+
+
+@pytest.mark.django_db
+def test_gallery_view_all_categories_and_images(client, category_with_images):
+    category, images = category_with_images
+
+    url = reverse('main')
+    response = client.get(url)
+
+    assert response.status_code == 200
+    assert category.name in str(response.content)
+    for image in images:
+        assert image.title in str(response.content)
